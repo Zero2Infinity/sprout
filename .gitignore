@@ -1,0 +1,6 @@
+config/*
+!config/.gitkeep
+config/config.json
+
+sessions/*
+!sessions/.gitkeep
