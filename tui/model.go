@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -55,7 +54,7 @@ func NewModel(cfg config.Config, sess *session.Session, loop *agent.Loop) Model 
 		sess:   sess,
 		loop:   loop,
 		state:  stateIdle,
-		header: NewHeaderModel(mustCwd(), sess.ID[:8], cfg.Provider.Model),
+		header: NewHeaderModel(mustCwd(), sess.ID[:6], cfg.Provider.Model),
 		chat:   NewChatModel(80, 20),
 		footer: NewFooterModel(),
 		input:  NewInputModel(),
@@ -68,7 +67,7 @@ func mustCwd() string {
 	if err != nil {
 		return "."
 	}
-	return filepath.Base(cwd)
+	return cwd
 }
 
 func (m Model) Init() tea.Cmd {
