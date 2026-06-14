@@ -1,7 +1,2 @@
-config/*
-!config/.gitkeep
-!config/config.go
-config/config.json
-
-sessions/*
-!sessions/.gitkeep
+.config/
+.sessions/

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 type ProviderConfig struct {
@@ -27,14 +26,14 @@ func Default() Config {
 			APIKey:  "ollama",
 		},
 		SystemPrompt: "You are a helpful assistant in a terminal chat interface. Respond concisely. Format code with markdown fences.",
-		DataDir:      "sessions",
+		DataDir:      ".sessions",
 	}
 }
 
 func Load() (Config, error) {
 	cfg := Default()
 
-	data, err := os.ReadFile("config/config.json")
+	data, err := os.ReadFile(".config/config.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return applyEnvOverrides(cfg), nil
@@ -43,7 +42,7 @@ func Load() (Config, error) {
 	}
 
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return Config{}, fmt.Errorf("parsing config/config.json: %w", err)
+		return Config{}, fmt.Errorf("parsing .config/config.json: %w", err)
 	}
 
 	return applyEnvOverrides(cfg), nil
@@ -62,7 +61,7 @@ func applyEnvOverrides(cfg Config) Config {
 func EnsureDataDirs(cfg Config) error {
 	dirs := []string{
 		cfg.DataDir,
-		filepath.Dir("config/config.json"),
+		".config",
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0o755); err != nil {
