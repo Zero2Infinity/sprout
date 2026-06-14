@@ -21,9 +21,10 @@ func NewInputModel() InputModel {
 	ta.Placeholder = "Type a message..."
 	ta.Focus()
 	ta.CharLimit = 0
-	ta.SetHeight(1)
+	ta.SetHeight(2)
 	ta.ShowLineNumbers = false
-	ta.KeyMap.InsertNewline.SetEnabled(false)
+	ta.KeyMap.InsertNewline.SetEnabled(true)
+	ta.FocusedStyle.CursorLine = ta.FocusedStyle.CursorLine.Foreground(nil)
 	return InputModel{
 		textarea:   ta,
 		history:    make([]string, 0),
