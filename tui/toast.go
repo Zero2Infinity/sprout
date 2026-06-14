@@ -4,6 +4,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type toastTickMsg time.Time
@@ -43,5 +44,10 @@ func (t ToastModel) View() string {
 	if !t.visible {
 		return ""
 	}
-	return t.message
+
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("2")).
+		Padding(0, 1)
+
+	return style.Render(t.message)
 }
