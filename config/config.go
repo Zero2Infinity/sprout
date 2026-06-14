@@ -21,7 +21,7 @@ type Config struct {
 func Default() Config {
 	return Config{
 		Provider: ProviderConfig{
-			BaseURL: "http://localhost:11434",
+			BaseURL: "http://localhost:11434/v1",
 			Model:   "qwen3:27b",
 			APIKey:  "ollama",
 		},
