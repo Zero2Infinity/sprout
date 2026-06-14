@@ -46,3 +46,21 @@ CLI chat app for local Ollama models. MVP scope — single provider, no multi-us
 - Syntax highlighting: chroma library, dark theme (Tokyo Night / Catppuccin)
 - Clipboard: `atotto/clipboard` (cross-platform)
 - Estimated effort: 8-13 hours total
+
+## Commit conventions
+
+Agent and human commits must be distinguishable in git history.
+
+**Branch-based separation:**
+- Agent works on `ai/*` branches (e.g., `ai/config-loading`, `ai/tui-header`)
+- Human reviews and squash-merges via PR to `main`
+- PR author = human, commit content = agent
+
+**Commit message prefix (during development):**
+- All agent commits use `[AI]` prefix: `[AI] Add config loading`
+- Human commits use no prefix or `[human]`
+
+**When merging to main:**
+- Squash-merge the `ai/*` branch
+- Clean up the commit message if needed
+- The PR itself documents human review
