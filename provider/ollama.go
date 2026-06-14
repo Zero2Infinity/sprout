@@ -131,9 +131,9 @@ func (p *OllamaProvider) wrapError(err error) error {
 	if strings.Contains(err.Error(), "connection refused") ||
 		strings.Contains(err.Error(), "no such host") ||
 		strings.Contains(err.Error(), "dial tcp") {
-		return fmt.Errorf("cannot connect to Ollama at %s\nRun `ollama serve` to start", p.baseURL)
+		return fmt.Errorf("cannot connect to LLM server at %s\nEnsure your server is running and accessible", p.baseURL)
 	}
-	return fmt.Errorf("ollama error: %w", err)
+	return fmt.Errorf("LLM error: %w", err)
 }
 
 func (p *OllamaProvider) Model() string {

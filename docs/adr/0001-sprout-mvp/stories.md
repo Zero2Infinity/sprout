@@ -42,7 +42,7 @@ Existing CLI chat tools for local LLMs are either complex to configure or requir
 - [ ] Returns clear error if file exists but is malformed JSON
 - [ ] Supports env var overrides (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`)
 - [ ] Default model: `qwen3:27b`
-- [ ] Default endpoint: `http://localhost:11434/v1`
+- [ ] Default endpoint: `http://localhost:11434`
 
 **Files:** `config/config.go`
 

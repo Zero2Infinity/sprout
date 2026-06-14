@@ -84,7 +84,7 @@ require (
 ```json
 {
   "provider": {
-    "baseURL": "http://localhost:11434/v1",
+    "baseURL": "http://localhost:11434",
     "model": "qwen3:27b",
     "apiKey": "ollama"
   },
