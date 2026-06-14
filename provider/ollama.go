@@ -21,13 +21,17 @@ type OllamaProvider struct {
 }
 
 func NewOllamaProvider(cfg config.Config) *OllamaProvider {
+	opts := []option.RequestOption{
+		option.WithBaseURL(cfg.Provider.BaseURL),
+	}
+	if cfg.Provider.APIKey != "" && cfg.Provider.APIKey != "no-key" {
+		opts = append(opts, option.WithAPIKey(cfg.Provider.APIKey))
+	}
+
 	return &OllamaProvider{
-		client: openai.NewClient(
-			option.WithBaseURL(cfg.Provider.BaseURL),
-			option.WithAPIKey(cfg.Provider.APIKey),
-		),
-		model:        cfg.Provider.Model,
-		baseURL:      cfg.Provider.BaseURL,
+		client:      openai.NewClient(opts...),
+		model:       cfg.Provider.Model,
+		baseURL:     cfg.Provider.BaseURL,
 		systemPrompt: cfg.SystemPrompt,
 	}
 }
