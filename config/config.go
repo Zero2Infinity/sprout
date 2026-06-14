@@ -22,7 +22,7 @@ func Default() Config {
 	return Config{
 		Provider: ProviderConfig{
 			BaseURL: "http://localhost:11434/v1",
-			Model:   "qwen3:27b",
+			Model:   "qwen3.6:27b",
 			APIKey:  "no-key",
 		},
 		SystemPrompt: "You are a helpful assistant in a terminal chat interface. Respond concisely. Format code with markdown fences.",

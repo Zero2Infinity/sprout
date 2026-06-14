@@ -39,7 +39,7 @@ CLI chat app for local Ollama models. MVP scope — single provider, no multi-us
 ## Key details
 
 - Config path: `.config/config.json` (repo-local, hidden)
-- Default model: `qwen3:27b`
+- Default model: `qwen3.6:27b`
 - Default endpoint: `http://localhost:11434/v1`
 - Env var overrides: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
 - Sessions stored: `.sessions/` (JSON per session, repo-local, hidden)

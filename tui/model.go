@@ -177,7 +177,7 @@ func (m Model) View() string {
 	input := m.input.View()
 	toast := m.toast.View()
 
-	chatHeight := m.height - 4
+	chatHeight := m.height - 5
 	if chatHeight < 1 {
 		chatHeight = 1
 	}
@@ -198,14 +198,9 @@ func (m Model) View() string {
 		bottom = footer + stateIndicator
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		strings.Repeat("─", m.width),
-		chat,
-		strings.Repeat("─", m.width),
-		input,
-		bottom,
-	)
+	separator := strings.Repeat("─", m.width)
+
+	return header + "\n" + separator + "\n" + chat + "\n" + separator + "\n" + input + "\n" + bottom
 }
 
 func (m *Model) updateLayout() {

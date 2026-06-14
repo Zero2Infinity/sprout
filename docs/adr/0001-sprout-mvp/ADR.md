@@ -85,7 +85,7 @@ require (
 {
   "provider": {
     "baseURL": "http://localhost:11434/v1",
-    "model": "qwen3:27b",
+    "model": "qwen3.6:27b",
     "apiKey": "ollama"
   },
   "dataDir": "sessions"
