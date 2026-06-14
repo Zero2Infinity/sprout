@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/user/sprout/agent"
 	"github.com/user/sprout/config"
+	"github.com/user/sprout/session"
+	"github.com/user/sprout/tui"
 )
 
 var (
@@ -50,9 +54,24 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("ensuring data directories: %w", err)
 	}
 
-	fmt.Printf("Sprout started — model: %s, endpoint: %s\n", cfg.Provider.Model, cfg.Provider.BaseURL)
-	if flagSession != "" {
-		fmt.Printf("Resuming session: %s\n", flagSession)
+	sess, err := session.LoadOrCreate(cfg.DataDir, flagSession, cfg.Provider.Model)
+	if err != nil {
+		return fmt.Errorf("loading session: %w", err)
+	}
+
+	loop := agent.NewLoop(cfg)
+	if sess.ID != flagSession {
+		session.RestoreMessages(sess, loop.Store())
+	}
+
+	m := tui.NewModel(cfg, sess, loop)
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		return fmt.Errorf("running TUI: %w", err)
+	}
+
+	if err := session.Save(cfg.DataDir, sess); err != nil {
+		return fmt.Errorf("saving session: %w", err)
 	}
 
 	return nil
