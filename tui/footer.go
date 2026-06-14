@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type FooterModel struct {
@@ -31,10 +30,5 @@ func (f FooterModel) View() string {
 		}
 		hints += h
 	}
-
-	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("8")).
-		Padding(0, 1)
-
-	return style.Render(fmt.Sprintf("Tokens: %d/%d | %s", f.currentTokens, f.totalTokens, hints))
+	return fmt.Sprintf(" Tokens: %d/%d | %s ", f.currentTokens, f.totalTokens, hints)
 }

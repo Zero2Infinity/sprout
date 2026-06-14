@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type HeaderModel struct {
@@ -26,10 +25,5 @@ func (h HeaderModel) Update(msg tea.Msg) (HeaderModel, tea.Cmd) {
 }
 
 func (h HeaderModel) View() string {
-	style := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("6")).
-		Padding(0, 1)
-
-	return style.Render(fmt.Sprintf("%s | Session: %s | %s", h.cwd, h.sessionID, h.modelName))
+	return fmt.Sprintf(" %s | Session: %s | %s ", h.cwd, h.sessionID, h.modelName)
 }
