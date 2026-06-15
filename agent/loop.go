@@ -40,31 +40,6 @@ func (l *Loop) SendMessage(ctx context.Context, content string) (<-chan provider
 		return nil, fmt.Errorf("starting chat: %w", err)
 	}
 
-	var assistantContent string
-	var tokens int
-
-	go func() {
-		for ev := range events {
-			if ev.Err != nil {
-				continue
-			}
-			if ev.ContentDelta != "" {
-				assistantContent += ev.ContentDelta
-			}
-			if ev.Complete && ev.Usage != nil {
-				tokens = ev.Usage.Tokens
-			}
-		}
-
-		if assistantContent != "" {
-			l.store.Add(message.Message{
-				Role:    message.RoleAssistant,
-				Content: assistantContent,
-				Tokens:  tokens,
-			})
-		}
-	}()
-
 	return events, nil
 }
 

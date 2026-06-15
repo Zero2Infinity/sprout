@@ -11,10 +11,11 @@ import (
 )
 
 type ChatModel struct {
-	messages []message.Message
-	viewport viewport.Model
-	width    int
-	height   int
+	messages         []message.Message
+	streamingContent string
+	viewport         viewport.Model
+	width            int
+	height           int
 }
 
 func NewChatModel(width, height int) ChatModel {
@@ -36,7 +37,13 @@ func (m ChatModel) View() string {
 	return m.viewport.View()
 }
 
+func (m *ChatModel) SetStreamingContent(content string) {
+	m.streamingContent = content
+	m.updateContent()
+}
+
 func (m *ChatModel) AddMessage(msg message.Message) {
+	m.streamingContent = ""
 	m.messages = append(m.messages, msg)
 	m.updateContent()
 }
@@ -63,6 +70,11 @@ func (m *ChatModel) updateContent() {
 		}
 		sb.WriteString(styled)
 		sb.WriteString("\n\n")
+	}
+	if m.streamingContent != "" {
+		styled := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5")).Render("Assistant: ") + m.streamingContent
+		styled += lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Render(" ▌")
+		sb.WriteString(styled)
 	}
 	m.viewport.SetContent(sb.String())
 	m.viewport.GotoBottom()

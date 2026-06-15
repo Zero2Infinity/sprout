@@ -44,8 +44,10 @@ type Model struct {
 	input  InputModel
 	toast  ToastModel
 
-	width  int
-	height int
+	streamingContent string
+	streamEvents     <-chan provider.StreamEvent
+	width            int
+	height           int
 }
 
 func NewModel(cfg config.Config, sess *session.Session, loop *agent.Loop) Model {
@@ -85,6 +87,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			return m, tea.Quit
+		}
+
 		if msg.Type == tea.KeyEsc && m.state == stateStreaming {
 			if m.cancel != nil {
 				m.cancel()
@@ -96,19 +102,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 
-		if m.state == stateStreaming {
+		// Block Enter during streaming (don't lose typed text), allow all other keys
+		if m.state == stateStreaming && msg.Type == tea.KeyEnter {
 			return m, nil
 		}
 
-		if msg.Type == tea.KeyCtrlC {
-			return m, tea.Quit
-		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		cmds = append(cmds, cmd)
 
 	case InputSubmitMsg:
 		if m.state == stateIdle {
 			m.state = stateStreaming
 			ctx, cancel := context.WithCancel(context.Background())
 			m.cancel = cancel
+			m.streamingContent = ""
 
 			events, err := m.loop.SendMessage(ctx, msg.Value)
 			if err != nil {
@@ -117,52 +125,64 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 			}
 
+			m.streamEvents = events
+
 			m.chat.AddMessage(message.Message{
 				Role:    message.RoleUser,
 				Content: msg.Value,
 			})
 
-			cmds = append(cmds, m.waitForStream(events))
+			cmds = append(cmds, m.waitForStream())
 			return m, tea.Batch(cmds...)
 		}
 
 	case streamChunkMsg:
 		if msg.err != nil {
 			m.state = stateIdle
+			m.streamingContent = ""
+			m.streamEvents = nil
 			cmds = append(cmds, m.toast.Show(fmt.Sprintf("Error: %v", msg.err)))
 			return m, tea.Batch(cmds...)
 		}
 
 		if msg.content != "" {
+			m.streamingContent += msg.content
 			m.footer.currentTokens += 1
 			m.footer.totalTokens += 1
+			m.chat.SetStreamingContent(m.streamingContent)
 		}
 
 		if msg.complete {
 			m.state = stateIdle
 			m.cancel = nil
-			store := m.loop.Store()
-			if last := store.LastAssistant(); last != nil {
-				m.chat.AddMessage(*last)
+			m.streamEvents = nil
+
+			if m.streamingContent != "" {
+				m.loop.Store().Add(message.Message{
+					Role:    message.RoleAssistant,
+					Content: m.streamingContent,
+					Tokens:  msg.tokens,
+				})
+				if last := m.loop.Store().LastAssistant(); last != nil {
+					m.chat.AddMessage(*last)
+				}
 			}
+
+			m.chat.SetStreamingContent("")
+			m.streamingContent = ""
 			return m, tea.Batch(cmds...)
 		}
 
+		cmds = append(cmds, m.waitForStream())
 		return m, tea.Batch(cmds...)
 	}
 
-	if m.state == stateIdle {
-		if _, ok := msg.(tea.KeyMsg); ok {
-			var cmd tea.Cmd
-			m.input, cmd = m.input.Update(msg)
-			cmds = append(cmds, cmd)
-		}
-	}
-
-	m.chat.Update(msg)
+	var chatCmd tea.Cmd
+	m.chat, chatCmd = m.chat.Update(msg)
 	m.header, _ = m.header.Update(msg)
 	m.footer, _ = m.footer.Update(msg)
 	m.toast, _ = m.toast.Update(msg)
+	cmds = append(cmds, chatCmd)
 
 	return m, tea.Batch(cmds...)
 }
@@ -177,7 +197,7 @@ func (m Model) View() string {
 	input := m.input.View()
 	toast := m.toast.View()
 
-	chatHeight := m.height - 5
+	chatHeight := m.height - 6
 	if chatHeight < 1 {
 		chatHeight = 1
 	}
@@ -204,24 +224,30 @@ func (m Model) View() string {
 }
 
 func (m *Model) updateLayout() {
-	chatHeight := m.height - 4
+	chatHeight := m.height - 6
 	if chatHeight < 1 {
 		chatHeight = 1
 	}
 	m.chat.SetSize(m.width, chatHeight)
+	m.input.SetWidth(m.width)
+	m.header.SetWidth(m.width)
 }
 
-func (m Model) waitForStream(events <-chan provider.StreamEvent) tea.Cmd {
+func (m Model) waitForStream() tea.Cmd {
 	return func() tea.Msg {
-		ev, ok := <-events
+		ev, ok := <-m.streamEvents
 		if !ok {
 			return streamChunkMsg{complete: true}
 		}
 		if ev.Err != nil {
 			return streamChunkMsg{err: ev.Err}
 		}
-		if ev.Complete && ev.Usage != nil {
-			return streamChunkMsg{complete: true, tokens: ev.Usage.Tokens}
+		if ev.Complete {
+			tokens := 0
+			if ev.Usage != nil {
+				tokens = ev.Usage.Tokens
+			}
+			return streamChunkMsg{complete: true, tokens: tokens}
 		}
 		return streamChunkMsg{content: ev.ContentDelta}
 	}
