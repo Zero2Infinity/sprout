@@ -66,7 +66,7 @@ require (
 | Syntax Highlighting | chroma for code blocks in chat messages |
 | History Navigation | Up/Down arrows in input textarea |
 | Clipboard Copy | Ctrl+Shift+C copies focused message |
-| Session Persistence | JSON file per session in `sessions/` (repo-local) |
+| Session Persistence | JSON file per session in `.sessions/` (repo-local) |
 
 ### Key Bindings
 
@@ -85,7 +85,7 @@ require (
 {
   "provider": {
     "baseURL": "http://localhost:11434/v1",
-    "model": "qwen3:27b",
+    "model": "qwen3.6:27b",
     "apiKey": "ollama"
   },
   "dataDir": "sessions"

@@ -17,7 +17,7 @@ CLI chat app for local Ollama models. MVP scope — single provider, no multi-us
 | TUI Framework | Bubble Tea |
 | CLI Framework | Cobra |
 | Config | Viper + JSON |
-| Session Storage | JSON files in `sessions/` (repo-local) |
+| Session Storage | JSON files in `.sessions/` (repo-local) |
 
 ## Planned package layout (from checklist)
 
@@ -38,11 +38,29 @@ CLI chat app for local Ollama models. MVP scope — single provider, no multi-us
 
 ## Key details
 
-- Config path: `config/config.json` (repo-local)
-- Default model: `qwen3:27b`
+- Config path: `.config/config.json` (repo-local, hidden)
+- Default model: `qwen3.6:27b`
 - Default endpoint: `http://localhost:11434/v1`
 - Env var overrides: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
-- Sessions stored: `sessions/` (JSON per session, repo-local)
+- Sessions stored: `.sessions/` (JSON per session, repo-local, hidden)
 - Syntax highlighting: chroma library, dark theme (Tokyo Night / Catppuccin)
 - Clipboard: `atotto/clipboard` (cross-platform)
 - Estimated effort: 8-13 hours total
+
+## Commit conventions
+
+Agent and human commits must be distinguishable in git history.
+
+**Branch-based separation:**
+- Agent works on `ai/*` branches (e.g., `ai/config-loading`, `ai/tui-header`)
+- Human reviews and squash-merges via PR to `main`
+- PR author = human, commit content = agent
+
+**Commit message prefix (during development):**
+- All agent commits use `[AI]` prefix: `[AI] Add config loading`
+- Human commits use no prefix or `[human]`
+
+**When merging to main:**
+- Squash-merge the `ai/*` branch
+- Clean up the commit message if needed
+- The PR itself documents human review

@@ -33,11 +33,11 @@ Existing CLI chat tools for local LLMs are either complex to configure or requir
 ---
 
 ### Story 1.1: Load JSON Config
-**As a** user, **I want** the app to load config from `config/config.json` in the repo
+**As a** user, **I want** the app to load config from `.config/config.json` in the repo
 **So that** I don't have to specify model/endpoint every time
 
 **Acceptance Criteria:**
-- [ ] Loads config from `config/config.json` (repo-local)
+- [ ] Loads config from `.config/config.json` (repo-local)
 - [ ] Falls back to defaults if file missing
 - [ ] Returns clear error if file exists but is malformed JSON
 - [ ] Supports env var overrides (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`)
@@ -53,7 +53,7 @@ Existing CLI chat tools for local LLMs are either complex to configure or requir
 **So that** I can resume conversations later
 
 **Acceptance Criteria:**
-- [ ] Creates `sessions/` directory in repo on first run
+- [ ] Creates `.sessions/` directory in repo on first run
 - [ ] Handles permission errors gracefully
 - [ ] Creates `config/` directory in repo if missing
 
@@ -145,7 +145,7 @@ Existing CLI chat tools for local LLMs are either complex to configure or requir
 **Acceptance Criteria:**
 - [ ] Generates UUID for session ID
 - [ ] Records model, timestamp
-- [ ] Saves to JSON file in `sessions/` (repo-local)
+- [ ] Saves to JSON file in `.sessions/` (repo-local)
 - [ ] Shows session ID in header
 - [ ] This is the default behavior (no `--session` flag)
 
@@ -158,7 +158,7 @@ Existing CLI chat tools for local LLMs are either complex to configure or requir
 **So that** I don't lose context
 
 **Acceptance Criteria:**
-- [ ] `--session <id>` flag loads session from `sessions/<id>.json`
+- [ ] `--session <id>` flag loads session from `.sessions/<id>.json`
 - [ ] Restores message history and token counts into message store
 - [ ] Restores prompt history for Up/Down navigation
 - [ ] Shows error if session ID not found
