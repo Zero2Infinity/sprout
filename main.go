@@ -1,3 +1,4 @@
+// Sprout is a terminal chat client for local Ollama models.
 package main
 
 import (

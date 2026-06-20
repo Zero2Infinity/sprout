@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// HeaderModel displays the working directory, session ID, and active model name.
 type HeaderModel struct {
 	width     int
 	cwd       string
@@ -15,6 +16,7 @@ type HeaderModel struct {
 	modelName string
 }
 
+// NewHeaderModel creates a header component with the given context info.
 func NewHeaderModel(cwd, sessionID, modelName string) HeaderModel {
 	return HeaderModel{
 		cwd:       cwd,
@@ -23,6 +25,7 @@ func NewHeaderModel(cwd, sessionID, modelName string) HeaderModel {
 	}
 }
 
+// SetWidth updates the header width for responsive layout.
 func (h *HeaderModel) SetWidth(w int) {
 	h.width = w
 }

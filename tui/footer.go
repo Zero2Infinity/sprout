@@ -7,12 +7,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// FooterModel displays token counts and keyboard shortcut hints.
 type FooterModel struct {
 	currentTokens int
 	totalTokens   int
 	keyHints      []string
 }
 
+// NewFooterModel creates a footer with default key hints.
 func NewFooterModel() FooterModel {
 	return FooterModel{
 		keyHints: []string{"enter: send", "esc: cancel", "↑/↓: history"},

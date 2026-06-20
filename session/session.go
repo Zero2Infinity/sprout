@@ -1,3 +1,4 @@
+// Package session handles creating, loading, saving, and restoring chat sessions.
 package session
 
 import (
@@ -12,12 +13,14 @@ import (
 	"github.com/user/sprout/message"
 )
 
+// TokenUsage tracks per-session token consumption counts.
 type TokenUsage struct {
 	PromptTokens     int `json:"promptTokens"`
 	CompletionTokens int `json:"completionTokens"`
 	TotalTokens      int `json:"totalTokens"`
 }
 
+// Session represents a single chat session with messages, metadata, and token usage.
 type Session struct {
 	ID           string           `json:"id"`
 	Model        string           `json:"model"`

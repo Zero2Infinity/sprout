@@ -9,12 +9,14 @@ import (
 
 type toastTickMsg time.Time
 
+// ToastModel shows a transient notification that auto-hides after one second.
 type ToastModel struct {
 	message string
 	visible bool
 	timer   *time.Timer
 }
 
+// NewToastModel creates an initially hidden toast component.
 func NewToastModel() ToastModel {
 	return ToastModel{}
 }
@@ -28,6 +30,7 @@ func (t ToastModel) Update(msg tea.Msg) (ToastModel, tea.Cmd) {
 	return t, nil
 }
 
+// Show displays a message toast for a short duration (1 second).
 func (t *ToastModel) Show(msg string) tea.Cmd {
 	t.message = msg
 	t.visible = true

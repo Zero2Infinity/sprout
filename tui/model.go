@@ -1,3 +1,4 @@
+// Package tui implements the Bubble Tea terminal UI with header, chat, footer, input, and toast.
 package tui
 
 import (
@@ -31,6 +32,7 @@ type streamChunkMsg struct {
 	err     error
 }
 
+// Model is the root Bubble Tea model composing all sub-components.
 type Model struct {
 	cfg    config.Config
 	sess   *session.Session
@@ -50,6 +52,7 @@ type Model struct {
 	height           int
 }
 
+// NewModel initializes the root TUI model with config, session, and agent loop.
 func NewModel(cfg config.Config, sess *session.Session, loop *agent.Loop) Model {
 	return Model{
 		cfg:    cfg,

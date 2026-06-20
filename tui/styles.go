@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 )
 
+// HighlightCode returns syntax-highlighted code using chroma with the monokai theme.
 func HighlightCode(code, language string) string {
 	lexer := lexers.Get(language)
 	if lexer == nil {
