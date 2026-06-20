@@ -6,10 +6,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// InputSubmitMsg signals that the user submitted a message via the input.
 type InputSubmitMsg struct {
 	Value string
 }
 
+// InputModel provides a textarea-based input with history navigation.
 type InputModel struct {
 	textarea   textarea.Model
 	history    []string
@@ -17,6 +19,7 @@ type InputModel struct {
 	width      int
 }
 
+// NewInputModel creates an input component with history tracking.
 func NewInputModel() InputModel {
 	ta := textarea.New()
 	ta.Placeholder = "Type a message..."
@@ -85,6 +88,7 @@ func (m InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
 	return m, cmd
 }
 
+// SetWidth updates the input width and re-applies background styling.
 func (m *InputModel) SetWidth(w int) {
 	m.width = w
 	m.textarea.SetWidth(w)

@@ -10,6 +10,7 @@ import (
 	"github.com/user/sprout/message"
 )
 
+// ChatModel renders a scrollable message list with an optional streaming indicator.
 type ChatModel struct {
 	messages         []message.Message
 	streamingContent string
@@ -18,6 +19,7 @@ type ChatModel struct {
 	height           int
 }
 
+// NewChatModel creates a chat view with a scrollable Bubble Tea viewport.
 func NewChatModel(width, height int) ChatModel {
 	vp := viewport.New(width, height)
 	return ChatModel{
@@ -37,17 +39,20 @@ func (m ChatModel) View() string {
 	return m.viewport.View()
 }
 
+// SetStreamingContent updates the in-progress assistant response text.
 func (m *ChatModel) SetStreamingContent(content string) {
 	m.streamingContent = content
 	m.updateContent()
 }
 
+// AddMessage appends a complete message to the chat and clears streaming state.
 func (m *ChatModel) AddMessage(msg message.Message) {
 	m.streamingContent = ""
 	m.messages = append(m.messages, msg)
 	m.updateContent()
 }
 
+// SetSize resizes the chat viewport to the given dimensions.
 func (m *ChatModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height

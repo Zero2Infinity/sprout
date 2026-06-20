@@ -1,3 +1,4 @@
+// Package config loads and manages application configuration with env-override support.
 package config
 
 import (
@@ -6,18 +7,21 @@ import (
 	"os"
 )
 
+// ProviderConfig holds the LLM endpoint, model, and optional API key.
 type ProviderConfig struct {
 	BaseURL string `json:"baseURL"`
 	Model   string `json:"model"`
 	APIKey  string `json:"apiKey"`
 }
 
+// Config is the top-level application configuration.
 type Config struct {
 	Provider     ProviderConfig `json:"provider"`
 	SystemPrompt string         `json:"systemPrompt"`
 	DataDir      string         `json:"dataDir"`
 }
 
+// Default returns a Config populated with sensible defaults for local development.
 func Default() Config {
 	return Config{
 		Provider: ProviderConfig{
@@ -30,6 +34,7 @@ func Default() Config {
 	}
 }
 
+// Load reads .config/config.json and applies environment variable overrides.
 func Load() (Config, error) {
 	cfg := Default()
 
@@ -58,6 +63,7 @@ func applyEnvOverrides(cfg Config) Config {
 	return cfg
 }
 
+// EnsureDataDirs creates required directories (data dir and .config) if missing.
 func EnsureDataDirs(cfg Config) error {
 	dirs := []string{
 		cfg.DataDir,

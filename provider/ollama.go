@@ -1,3 +1,4 @@
+// Package provider implements the Ollama LLM provider via the OpenAI-compatible API.
 package provider
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/user/sprout/message"
 )
 
+// OllamaProvider wraps an OpenAI-compatible client configured for Ollama.
 type OllamaProvider struct {
 	client      openai.Client
 	model       string
@@ -20,6 +22,7 @@ type OllamaProvider struct {
 	systemPrompt string
 }
 
+// NewOllamaProvider creates an OllamaProvider from the given application config.
 func NewOllamaProvider(cfg config.Config) *OllamaProvider {
 	opts := []option.RequestOption{
 		option.WithBaseURL(cfg.Provider.BaseURL),
@@ -36,6 +39,7 @@ func NewOllamaProvider(cfg config.Config) *OllamaProvider {
 	}
 }
 
+// StreamEvent carries streaming content deltas, completion signals, or errors.
 type StreamEvent struct {
 	ContentDelta string
 	Complete     bool
@@ -43,6 +47,7 @@ type StreamEvent struct {
 	Err          error
 }
 
+// ChatStream starts a streaming chat completion and returns a channel of events.
 func (p *OllamaProvider) ChatStream(ctx context.Context, store *message.Store) (<-chan StreamEvent, error) {
 	msgs := p.buildMessages(store)
 
@@ -140,10 +145,12 @@ func (p *OllamaProvider) wrapError(err error) error {
 	return fmt.Errorf("LLM error: %w", err)
 }
 
+// Model returns the configured Ollama model name.
 func (p *OllamaProvider) Model() string {
 	return p.model
 }
 
+// BaseURL returns the configured Ollama API base URL.
 func (p *OllamaProvider) BaseURL() string {
 	return p.baseURL
 }
