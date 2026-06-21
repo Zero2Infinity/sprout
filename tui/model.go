@@ -31,6 +31,9 @@ type streamChunkMsg struct {
 	promptTokens     int
 	completionTokens int
 	totalTokens      int
+	tokensPerSec     float64
+	totalDurationNs  int64
+	evalDurationNs   int64
 	err              error
 }
 
@@ -66,10 +69,10 @@ func NewModel(cfg config.Config, sess *session.Session, loop *agent.Loop) Model 
 		sess:   sess,
 		loop:   loop,
 		state:  stateIdle,
-		header: NewHeaderModel(mustCwd(), sess.ID[:6], cfg.Provider.Model),
+		header: NewHeaderModel(mustCwd(), sess.ID, cfg.Provider.Model),
 		chat:   chat,
 		footer: NewFooterModel().
-			WithUsage(sess.TokenUsage.PromptTokens, sess.TokenUsage.CompletionTokens).
+			WithUsage(sess.TokenUsage.PromptTokens, sess.TokenUsage.CompletionTokens, sess.TokenUsage.TokensPerSec(), sess.TokenUsage.TotalDurationNs).
 			WithContext(sess.TokenUsage.TotalTokens, provider.ModelContext(cfg.Provider.Model)),
 		input: NewInputModel(),
 		toast: NewToastModel(),
@@ -178,15 +181,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				session.SyncFromStore(m.sess, m.loop.Store())
 			}
 
-			if msg.hasUsage {
-				m.footer = m.footer.WithUsage(msg.promptTokens, msg.completionTokens)
-				m.footer = m.footer.WithContext(msg.totalTokens, provider.ModelContext(m.cfg.Provider.Model))
-				m.sess.UpdateTokenUsage(provider.Usage{
-					PromptTokens:     msg.promptTokens,
-					CompletionTokens: msg.completionTokens,
-					TotalTokens:      msg.totalTokens,
-				})
-			}
+		if msg.hasUsage {
+			m.footer = m.footer.WithUsage(msg.promptTokens, msg.completionTokens, msg.tokensPerSec, msg.totalDurationNs)
+			m.footer = m.footer.WithContext(msg.promptTokens+msg.completionTokens, provider.ModelContext(m.cfg.Provider.Model))
+			m.sess.UpdateTokenUsage(provider.Usage{
+				PromptTokens:     msg.promptTokens,
+				CompletionTokens: msg.completionTokens,
+				TotalTokens:      msg.totalTokens,
+				TotalDurationNs:  msg.totalDurationNs,
+				EvalDurationNs:   msg.evalDurationNs,
+			})
+		}
 
 			m.chat.SetStreamingContent("")
 			m.streamingContent = ""
@@ -281,6 +286,9 @@ func (m Model) waitForStream() tea.Cmd {
 					promptTokens:     ev.Usage.PromptTokens,
 					completionTokens: ev.Usage.CompletionTokens,
 					totalTokens:      ev.Usage.TotalTokens,
+					tokensPerSec:     ev.Usage.TokensPerSec(),
+					totalDurationNs:  ev.Usage.TotalDurationNs,
+					evalDurationNs:   ev.Usage.EvalDurationNs,
 				}
 			}
 			return streamChunkMsg{complete: true}

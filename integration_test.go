@@ -169,7 +169,6 @@ func TestSessionPersistence(t *testing.T) {
 				{"role": "user", "content": "Hello", "timestamp": "2026-06-14T12:00:00Z"},
 				{"role": "assistant", "content": "Hi there", "timestamp": "2026-06-14T12:00:01Z"}
 			],
-			"promptHistory": ["Hello"],
 			"tokenUsage": {"promptTokens": 10, "completionTokens": 10, "totalTokens": 20}
 		}`
 

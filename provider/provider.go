@@ -8,11 +8,25 @@ import (
 	"github.com/user/sprout/message"
 )
 
-// Usage tracks token consumption for a single API request.
+// Usage tracks token consumption and timing for a single API request.
 type Usage struct {
 	PromptTokens     int
 	CompletionTokens int
 	TotalTokens      int
+
+	// Timing fields (Ollama-specific, zero for other providers)
+	TotalDurationNs      int64
+	LoadDurationNs       int64
+	PromptEvalDurationNs int64
+	EvalDurationNs       int64
+}
+
+// TokensPerSec returns output tokens per second, or 0 if no eval timing is available.
+func (u Usage) TokensPerSec() float64 {
+	if u.EvalDurationNs == 0 || u.CompletionTokens == 0 {
+		return 0
+	}
+	return float64(u.CompletionTokens) / float64(u.EvalDurationNs) * 1e9
 }
 
 // StreamEvent carries streaming content deltas, completion signals, or errors.

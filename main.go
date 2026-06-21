@@ -82,7 +82,14 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("saving session: %w", err)
 	}
 
-	fmt.Fprintf(os.Stdout, "\nSession saved: %s\nTo resume: sprout --session %s\n", sess.ID, sess.ID)
+	fmt.Fprintf(os.Stdout, "\nSession saved: %s\n", sess.ID)
+	fmt.Fprintf(os.Stdout, "Prompt tokens: %d | Completion: %d | Total: %d\n",
+		sess.TokenUsage.PromptTokens, sess.TokenUsage.CompletionTokens, sess.TokenUsage.TotalTokens)
+	if tokPerSec := sess.TokenUsage.TokensPerSec(); tokPerSec > 0 {
+		durationSec := float64(sess.TokenUsage.TotalDurationNs) / 1e9
+		fmt.Fprintf(os.Stdout, "Latency: %.1fs | Speed: %.1f tok/s\n", durationSec, tokPerSec)
+	}
+	fmt.Fprintf(os.Stdout, "To resume: sprout --session %s\n", sess.ID)
 
 	return nil
 }

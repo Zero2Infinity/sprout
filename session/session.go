@@ -14,11 +14,21 @@ import (
 	"github.com/user/sprout/provider"
 )
 
-// TokenUsage tracks per-session token consumption counts.
+// TokenUsage tracks per-session token consumption and timing.
 type TokenUsage struct {
-	PromptTokens     int `json:"promptTokens"`
-	CompletionTokens int `json:"completionTokens"`
-	TotalTokens      int `json:"totalTokens"`
+	PromptTokens     int   `json:"promptTokens"`
+	CompletionTokens int   `json:"completionTokens"`
+	TotalTokens      int   `json:"totalTokens"`
+	TotalDurationNs  int64 `json:"totalDurationNs,omitempty"`
+	EvalDurationNs   int64 `json:"evalDurationNs,omitempty"`
+}
+
+// TokensPerSec returns session-level output tokens per second, or 0 if no eval timing.
+func (t TokenUsage) TokensPerSec() float64 {
+	if t.EvalDurationNs == 0 || t.CompletionTokens == 0 {
+		return 0
+	}
+	return float64(t.CompletionTokens) / float64(t.EvalDurationNs) * 1e9
 }
 
 // Session represents a single chat session with messages, metadata, and token usage.
@@ -28,7 +38,6 @@ type Session struct {
 	CreatedAt     time.Time         `json:"createdAt"`
 	UpdatedAt     time.Time         `json:"updatedAt"`
 	Messages      []message.Message `json:"messages"`
-	PromptHistory []string          `json:"promptHistory"`
 	TokenUsage    TokenUsage        `json:"tokenUsage"`
 }
 
@@ -105,11 +114,13 @@ func SyncFromStore(sess *Session, store *message.Store) {
 	sess.Messages = store.All()
 }
 
-// UpdateTokenUsage updates the session's token usage from an API response.
+// UpdateTokenUsage accumulates token usage and timing from an API response.
 func (s *Session) UpdateTokenUsage(usage provider.Usage) {
 	s.TokenUsage.PromptTokens = usage.PromptTokens
 	s.TokenUsage.CompletionTokens += usage.CompletionTokens
 	s.TokenUsage.TotalTokens = usage.TotalTokens
+	s.TokenUsage.TotalDurationNs += usage.TotalDurationNs
+	s.TokenUsage.EvalDurationNs += usage.EvalDurationNs
 }
 
 // List returns all sessions in the data directory, sorted by most recently updated.
