@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -31,6 +32,13 @@ func main() {
 	rootCmd.Flags().StringVar(&flagSession, "session", "", "resume a specific session by ID")
 	rootCmd.Flags().StringVar(&flagModel, "model", "", "override config model")
 	rootCmd.Flags().StringVar(&flagEndpoint, "endpoint", "", "override config endpoint")
+
+	lsCmd := &cobra.Command{
+		Use:   "ls",
+		Short: "List saved sessions",
+		RunE:  runLs,
+	}
+	rootCmd.AddCommand(lsCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -61,9 +69,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	loop := agent.NewLoop(cfg)
-	if sess.ID != flagSession {
-		session.RestoreMessages(sess, loop.Store())
-	}
+	session.RestoreMessages(sess, loop.Store())
 
 	m := tui.NewModel(cfg, sess, loop)
 	p := tea.NewProgram(m, tea.WithAltScreen())
@@ -71,8 +77,36 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("running TUI: %w", err)
 	}
 
+	session.SyncFromStore(sess, loop.Store())
 	if err := session.Save(cfg.DataDir, sess); err != nil {
 		return fmt.Errorf("saving session: %w", err)
+	}
+
+	fmt.Fprintf(os.Stdout, "\nSession saved: %s\nTo resume: sprout --session %s\n", sess.ID, sess.ID)
+
+	return nil
+}
+
+func runLs(cmd *cobra.Command, args []string) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+
+	sessions, err := session.List(cfg.DataDir)
+	if err != nil {
+		return fmt.Errorf("listing sessions: %w", err)
+	}
+
+	if len(sessions) == 0 {
+		fmt.Println("No saved sessions.")
+		return nil
+	}
+
+	for _, s := range sessions {
+		msgCount := len(s.Messages)
+		age := time.Since(s.UpdatedAt).Truncate(time.Second)
+		fmt.Printf("%s  %s ago  %d messages  model: %s\n", s.ID, age, msgCount, s.Model)
 	}
 
 	return nil

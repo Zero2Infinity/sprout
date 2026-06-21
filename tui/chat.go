@@ -52,6 +52,14 @@ func (m *ChatModel) AddMessage(msg message.Message) {
 	m.updateContent()
 }
 
+// LoadMessages replaces all messages and re-renders the viewport.
+func (m *ChatModel) LoadMessages(msgs []message.Message) {
+	m.messages = make([]message.Message, len(msgs))
+	copy(m.messages, msgs)
+	m.streamingContent = ""
+	m.updateContent()
+}
+
 // SetSize resizes the chat viewport to the given dimensions.
 func (m *ChatModel) SetSize(width, height int) {
 	m.width = width

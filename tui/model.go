@@ -26,10 +26,13 @@ const (
 )
 
 type streamChunkMsg struct {
-	content string
-	complete bool
-	tokens  int
-	err     error
+	content          string
+	complete         bool
+	hasUsage         bool
+	promptTokens     int
+	completionTokens int
+	totalTokens      int
+	err              error
 }
 
 // Model is the root Bubble Tea model composing all sub-components.
@@ -54,16 +57,23 @@ type Model struct {
 
 // NewModel initializes the root TUI model with config, session, and agent loop.
 func NewModel(cfg config.Config, sess *session.Session, loop *agent.Loop) Model {
+	chat := NewChatModel(80, 20)
+	if len(sess.Messages) > 0 {
+		chat.LoadMessages(sess.Messages)
+	}
+
 	return Model{
 		cfg:    cfg,
 		sess:   sess,
 		loop:   loop,
 		state:  stateIdle,
 		header: NewHeaderModel(mustCwd(), sess.ID[:6], cfg.Provider.Model),
-		chat:   NewChatModel(80, 20),
-		footer: NewFooterModel(),
-		input:  NewInputModel(),
-		toast:  NewToastModel(),
+		chat:   chat,
+		footer: NewFooterModel().
+			WithUsage(sess.TokenUsage.PromptTokens, sess.TokenUsage.CompletionTokens).
+			WithContext(sess.TokenUsage.TotalTokens, provider.ModelContext(cfg.Provider.Model)),
+		input: NewInputModel(),
+		toast: NewToastModel(),
 	}
 }
 
@@ -150,8 +160,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if msg.content != "" {
 			m.streamingContent += msg.content
-			m.footer.currentTokens += 1
-			m.footer.totalTokens += 1
 			m.chat.SetStreamingContent(m.streamingContent)
 		}
 
@@ -164,11 +172,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loop.Store().Add(message.Message{
 					Role:    message.RoleAssistant,
 					Content: m.streamingContent,
-					Tokens:  msg.tokens,
 				})
 				if last := m.loop.Store().LastAssistant(); last != nil {
 					m.chat.AddMessage(*last)
 				}
+				session.SyncFromStore(m.sess, m.loop.Store())
+			}
+
+			if msg.hasUsage {
+				m.footer = m.footer.WithUsage(msg.promptTokens, msg.completionTokens)
+				m.footer = m.footer.WithContext(msg.totalTokens, provider.ModelContext(m.cfg.Provider.Model))
+				m.sess.UpdateTokenUsage(provider.Usage{
+					PromptTokens:     msg.promptTokens,
+					CompletionTokens: msg.completionTokens,
+					TotalTokens:      msg.totalTokens,
+				})
 			}
 
 			m.chat.SetStreamingContent("")
@@ -246,11 +264,16 @@ func (m Model) waitForStream() tea.Cmd {
 			return streamChunkMsg{err: ev.Err}
 		}
 		if ev.Complete {
-			tokens := 0
 			if ev.Usage != nil {
-				tokens = ev.Usage.Tokens
+				return streamChunkMsg{
+					complete:         true,
+					hasUsage:         true,
+					promptTokens:     ev.Usage.PromptTokens,
+					completionTokens: ev.Usage.CompletionTokens,
+					totalTokens:      ev.Usage.TotalTokens,
+				}
 			}
-			return streamChunkMsg{complete: true, tokens: tokens}
+			return streamChunkMsg{complete: true}
 		}
 		return streamChunkMsg{content: ev.ContentDelta}
 	}

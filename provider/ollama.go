@@ -39,13 +39,7 @@ func NewOllamaProvider(cfg config.Config) *OllamaProvider {
 	}
 }
 
-// StreamEvent carries streaming content deltas, completion signals, or errors.
-type StreamEvent struct {
-	ContentDelta string
-	Complete     bool
-	Usage        *message.Message
-	Err          error
-}
+
 
 // ChatStream starts a streaming chat completion and returns a channel of events.
 func (p *OllamaProvider) ChatStream(ctx context.Context, store *message.Store) (<-chan StreamEvent, error) {
@@ -82,10 +76,10 @@ func (p *OllamaProvider) ChatStream(ctx context.Context, store *message.Store) (
 			if chunk.Usage.TotalTokens > 0 {
 				events <- StreamEvent{
 					Complete: true,
-					Usage: &message.Message{
-						Role:    message.RoleAssistant,
-						Tokens:  int(chunk.Usage.TotalTokens),
-						Content: "",
+					Usage: &Usage{
+						PromptTokens:     int(chunk.Usage.PromptTokens),
+						CompletionTokens: int(chunk.Usage.CompletionTokens),
+						TotalTokens:      int(chunk.Usage.TotalTokens),
 					},
 				}
 			}

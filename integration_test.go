@@ -159,15 +159,15 @@ func TestSessionPersistence(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	t.Run("Session JSON format", func(t *testing.T) {
+		t.Run("Session JSON format", func(t *testing.T) {
 		sessionData := `{
 			"id": "test-session-123",
 			"model": "qwen3.6:27b",
 			"createdAt": "2026-06-14T12:00:00Z",
 			"updatedAt": "2026-06-14T12:00:00Z",
 			"messages": [
-				{"role": "user", "content": "Hello", "tokens": 0, "timestamp": "2026-06-14T12:00:00Z"},
-				{"role": "assistant", "content": "Hi there", "tokens": 10, "timestamp": "2026-06-14T12:00:01Z"}
+				{"role": "user", "content": "Hello", "timestamp": "2026-06-14T12:00:00Z"},
+				{"role": "assistant", "content": "Hi there", "timestamp": "2026-06-14T12:00:01Z"}
 			],
 			"promptHistory": ["Hello"],
 			"tokenUsage": {"promptTokens": 10, "completionTokens": 10, "totalTokens": 20}

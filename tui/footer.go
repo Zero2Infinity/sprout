@@ -9,9 +9,11 @@ import (
 
 // FooterModel displays token counts and keyboard shortcut hints.
 type FooterModel struct {
-	currentTokens int
-	totalTokens   int
-	keyHints      []string
+	promptTokens     int
+	completionTokens int
+	contextUsed      int
+	contextMax       int
+	keyHints         []string
 }
 
 // NewFooterModel creates a footer with default key hints.
@@ -25,6 +27,21 @@ func (f FooterModel) Update(msg tea.Msg) (FooterModel, tea.Cmd) {
 	return f, nil
 }
 
+// WithUsage returns a copy of the footer with updated prompt and completion token counts.
+func (f FooterModel) WithUsage(prompt, completion int) FooterModel {
+	f.promptTokens = prompt
+	f.completionTokens = completion
+	f.contextUsed = prompt + completion
+	return f
+}
+
+// WithContext returns a copy of the footer with updated context window info.
+func (f FooterModel) WithContext(used, max int) FooterModel {
+	f.contextUsed = used
+	f.contextMax = max
+	return f
+}
+
 func (f FooterModel) View() string {
 	hints := ""
 	for i, h := range f.keyHints {
@@ -36,5 +53,5 @@ func (f FooterModel) View() string {
 	style := lipgloss.NewStyle().
 		Background(lipgloss.Color("239")).
 		Foreground(lipgloss.Color("255"))
-	return style.Render(fmt.Sprintf(" Tokens: %d/%d | %s ", f.currentTokens, f.totalTokens, hints))
+	return style.Render(fmt.Sprintf(" Prompt: %d | Completion: %d | Context: %d/%d | %s ", f.promptTokens, f.completionTokens, f.contextUsed, f.contextMax, hints))
 }

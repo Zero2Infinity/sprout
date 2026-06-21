@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/user/sprout/message"
+	"github.com/user/sprout/provider"
 )
 
 // TokenUsage tracks per-session token consumption counts.
@@ -97,4 +98,54 @@ func RestoreMessages(sess *Session, store *message.Store) {
 	for _, msg := range sess.Messages {
 		store.Add(msg)
 	}
+}
+
+// SyncFromStore copies messages from the in-memory store to the session for persistence.
+func SyncFromStore(sess *Session, store *message.Store) {
+	sess.Messages = store.All()
+}
+
+// UpdateTokenUsage updates the session's token usage from an API response.
+func (s *Session) UpdateTokenUsage(usage provider.Usage) {
+	s.TokenUsage.PromptTokens = usage.PromptTokens
+	s.TokenUsage.CompletionTokens += usage.CompletionTokens
+	s.TokenUsage.TotalTokens = usage.TotalTokens
+}
+
+// List returns all sessions in the data directory, sorted by most recently updated.
+func List(dataDir string) ([]Session, error) {
+	entries, err := os.ReadDir(dataDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("reading sessions directory: %w", err)
+	}
+
+	var sessions []Session
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		path := filepath.Join(dataDir, entry.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var sess Session
+		if err := json.Unmarshal(data, &sess); err != nil {
+			continue
+		}
+		sessions = append(sessions, sess)
+	}
+
+	for i := 0; i < len(sessions); i++ {
+		for j := i + 1; j < len(sessions); j++ {
+			if sessions[j].UpdatedAt.After(sessions[i].UpdatedAt) {
+				sessions[i], sessions[j] = sessions[j], sessions[i]
+			}
+		}
+	}
+
+	return sessions, nil
 }

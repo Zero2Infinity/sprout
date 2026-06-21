@@ -12,7 +12,7 @@ import (
 
 // Loop connects the LLM provider and message store for a single chat session.
 type Loop struct {
-	provider *provider.OllamaProvider
+	provider provider.Provider
 	store    *message.Store
 }
 
@@ -30,7 +30,7 @@ func (l *Loop) Store() *message.Store {
 }
 
 // Provider returns the underlying LLM provider instance.
-func (l *Loop) Provider() *provider.OllamaProvider {
+func (l *Loop) Provider() provider.Provider {
 	return l.provider
 }
 
