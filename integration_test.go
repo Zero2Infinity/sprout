@@ -159,7 +159,7 @@ func TestSessionPersistence(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-		t.Run("Session JSON format", func(t *testing.T) {
+	t.Run("Session JSON format", func(t *testing.T) {
 		sessionData := `{
 			"id": "test-session-123",
 			"model": "qwen3.6:27b",

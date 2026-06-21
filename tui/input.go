@@ -22,31 +22,38 @@ type InputModel struct {
 // NewInputModel creates an input component with history tracking.
 func NewInputModel() InputModel {
 	ta := textarea.New()
-	ta.Placeholder = "Type a message..."
+	// ta.Placeholder = "Type a message..."
 	ta.Focus()
 	ta.CharLimit = 0
 	ta.SetHeight(2)
 	ta.ShowLineNumbers = false
 	ta.KeyMap.InsertNewline.SetEnabled(true)
 
-	bgStyle := func() lipgloss.Style {
-		return lipgloss.NewStyle().
-			Background(lipgloss.Color("0")).
-			Foreground(lipgloss.Color("240"))
-	}
-
-	ta.FocusedStyle.Base = bgStyle()
-	ta.FocusedStyle.Placeholder = bgStyle()
-	ta.FocusedStyle.CursorLine = bgStyle()
-	ta.BlurredStyle.Base = bgStyle()
-	ta.BlurredStyle.Placeholder = bgStyle()
-	ta.BlurredStyle.CursorLine = bgStyle()
+	style := inputBaseStyle(0)
+	ta.FocusedStyle.Base = style
+	ta.FocusedStyle.Placeholder = style
+	ta.FocusedStyle.CursorLine = style
+	ta.BlurredStyle.Base = style
+	ta.BlurredStyle.Placeholder = style
+	ta.BlurredStyle.CursorLine = style
 
 	return InputModel{
 		textarea:   ta,
 		history:    make([]string, 0),
 		historyIdx: -1,
 	}
+}
+
+// inputBaseStyle returns the base lipgloss style for the textarea.
+// width=0 means no width constraint; width>0 applies Width(w).
+func inputBaseStyle(width int) lipgloss.Style {
+	s := lipgloss.NewStyle().
+		Background(lipgloss.Color("239")).
+		Foreground(lipgloss.Color("240"))
+	if width > 0 {
+		s = s.Width(width)
+	}
+	return s
 }
 
 func (m InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
@@ -93,21 +100,18 @@ func (m *InputModel) SetWidth(w int) {
 	m.width = w
 	m.textarea.SetWidth(w)
 
-	bgStyle := func() lipgloss.Style {
-		return lipgloss.NewStyle().
-			Background(lipgloss.Color("0")).
-			Foreground(lipgloss.Color("240")).
-			Width(w)
-	}
-
-	m.textarea.FocusedStyle.Base = bgStyle()
-	m.textarea.FocusedStyle.Placeholder = bgStyle()
-	m.textarea.FocusedStyle.CursorLine = bgStyle()
-	m.textarea.BlurredStyle.Base = bgStyle()
-	m.textarea.BlurredStyle.Placeholder = bgStyle()
-	m.textarea.BlurredStyle.CursorLine = bgStyle()
+	style := inputBaseStyle(w)
+	m.textarea.FocusedStyle.Base = style
+	m.textarea.FocusedStyle.Placeholder = style
+	m.textarea.FocusedStyle.CursorLine = style
+	m.textarea.BlurredStyle.Base = style
+	m.textarea.BlurredStyle.Placeholder = style
+	m.textarea.BlurredStyle.CursorLine = style
 }
 
 func (m InputModel) View() string {
-	return m.textarea.View()
+	style := lipgloss.NewStyle().
+		Background(lipgloss.Color("239")).
+		Width(m.width)
+	return style.Render(m.textarea.View())
 }

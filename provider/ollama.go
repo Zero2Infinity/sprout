@@ -16,9 +16,9 @@ import (
 
 // OllamaProvider wraps an OpenAI-compatible client configured for Ollama.
 type OllamaProvider struct {
-	client      openai.Client
-	model       string
-	baseURL     string
+	client       openai.Client
+	model        string
+	baseURL      string
 	systemPrompt string
 }
 
@@ -32,21 +32,19 @@ func NewOllamaProvider(cfg config.Config) *OllamaProvider {
 	}
 
 	return &OllamaProvider{
-		client:      openai.NewClient(opts...),
-		model:       cfg.Provider.Model,
-		baseURL:     cfg.Provider.BaseURL,
+		client:       openai.NewClient(opts...),
+		model:        cfg.Provider.Model,
+		baseURL:      cfg.Provider.BaseURL,
 		systemPrompt: cfg.SystemPrompt,
 	}
 }
-
-
 
 // ChatStream starts a streaming chat completion and returns a channel of events.
 func (p *OllamaProvider) ChatStream(ctx context.Context, store *message.Store) (<-chan StreamEvent, error) {
 	msgs := p.buildMessages(store)
 
 	stream := p.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Model: p.model,
+		Model:    p.model,
 		Messages: msgs,
 		StreamOptions: openai.ChatCompletionStreamOptionsParam{
 			IncludeUsage: param.Opt[bool]{Value: true},

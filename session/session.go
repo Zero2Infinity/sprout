@@ -23,13 +23,13 @@ type TokenUsage struct {
 
 // Session represents a single chat session with messages, metadata, and token usage.
 type Session struct {
-	ID           string           `json:"id"`
-	Model        string           `json:"model"`
-	CreatedAt    time.Time        `json:"createdAt"`
-	UpdatedAt    time.Time        `json:"updatedAt"`
-	Messages     []message.Message `json:"messages"`
-	PromptHistory []string        `json:"promptHistory"`
-	TokenUsage   TokenUsage       `json:"tokenUsage"`
+	ID            string            `json:"id"`
+	Model         string            `json:"model"`
+	CreatedAt     time.Time         `json:"createdAt"`
+	UpdatedAt     time.Time         `json:"updatedAt"`
+	Messages      []message.Message `json:"messages"`
+	PromptHistory []string          `json:"promptHistory"`
+	TokenUsage    TokenUsage        `json:"tokenUsage"`
 }
 
 func sessionFilePath(dataDir, id string) string {
