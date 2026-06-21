@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -213,6 +212,8 @@ func (m Model) View() string {
 		return "Loading..."
 	}
 
+	innerWidth := m.width - 2
+
 	header := m.header.View()
 	footer := m.footer.View()
 	input := m.input.View()
@@ -222,7 +223,7 @@ func (m Model) View() string {
 	if chatHeight < 1 {
 		chatHeight = 1
 	}
-	m.chat.SetSize(m.width, chatHeight)
+	m.chat.SetSize(innerWidth, chatHeight)
 	chat := m.chat.View()
 
 	stateIndicator := ""
@@ -239,19 +240,28 @@ func (m Model) View() string {
 		bottom = footer + stateIndicator
 	}
 
-	separator := strings.Repeat("─", m.width)
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		header,
+		chat,
+		input,
+		bottom,
+	)
 
-	return header + "\n" + separator + "\n" + chat + "\n" + separator + "\n" + input + "\n" + bottom
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("238")).
+		Width(m.width - 2).
+		Render(body)
 }
 
 func (m *Model) updateLayout() {
+	innerWidth := m.width - 2
 	chatHeight := m.height - 6
 	if chatHeight < 1 {
 		chatHeight = 1
 	}
-	m.chat.SetSize(m.width, chatHeight)
-	m.input.SetWidth(m.width)
-	m.header.SetWidth(m.width)
+	m.chat.SetSize(innerWidth, chatHeight)
+	m.input.SetWidth(innerWidth)
 }
 
 func (m Model) waitForStream() tea.Cmd {

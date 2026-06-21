@@ -48,7 +48,7 @@ func NewInputModel() InputModel {
 // width=0 means no width constraint; width>0 applies Width(w).
 func inputBaseStyle(width int) lipgloss.Style {
 	s := lipgloss.NewStyle().
-		Background(lipgloss.Color("239")).
+		Background(lipgloss.Color("236")).
 		Foreground(lipgloss.Color("240"))
 	if width > 0 {
 		s = s.Width(width)
@@ -111,7 +111,7 @@ func (m *InputModel) SetWidth(w int) {
 
 func (m InputModel) View() string {
 	style := lipgloss.NewStyle().
-		Background(lipgloss.Color("239")).
+		Background(lipgloss.Color("236")).
 		Width(m.width)
 	return style.Render(m.textarea.View())
 }
