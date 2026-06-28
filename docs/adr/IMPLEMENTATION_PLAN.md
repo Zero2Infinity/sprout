@@ -338,30 +338,17 @@ Three features implemented in **3 separate phases** (ADRs, branches, PRs).
 **So that** sessions are restored correctly
 
 **Acceptance Criteria:**
-- [ ] `Load()` reads `.jsonl` file
+- [ ] `Load()` reads `.jsonl` file only (no `.json` fallback)
 - [ ] Parses line 1 as metadata
 - [ ] Parses lines 2+ as messages
 - [ ] Returns `Session` struct
+- [ ] Clear error if `.jsonl` not found
 
 **Files:** `session/session.go`
 
 ---
 
-#### Story 3.3: Legacy JSON migration
-**As a** user, **I want** old JSON sessions to load automatically
-**So that** I don't lose conversation history
-
-**Acceptance Criteria:**
-- [ ] `Load()` detects old JSON format (has `"messages"` key)
-- [ ] `migrateToJSONL()` converts to JSONL
-- [ ] Old `.json` file preserved (not deleted)
-- [ ] New `.jsonl` file created
-
-**Files:** `session/session.go`
-
----
-
-#### Story 3.4: SyncFromStore update
+#### Story 3.3: SyncFromStore update
 **As a** developer, **I want** SyncFromStore to work with JSONL
 **So that** incremental saves work correctly
 
@@ -374,15 +361,28 @@ Three features implemented in **3 separate phases** (ADRs, branches, PRs).
 
 ---
 
+#### Story 3.4: List sessions
+**As a** user, **I want** `sprout ls` to find JSONL sessions
+**So that** I can list and resume sessions
+
+**Acceptance Criteria:**
+- [ ] `List()` reads `.sessions/*.jsonl` files
+- [ ] Returns sessions sorted by updatedAt desc
+- [ ] Shows ID, age, message count, model
+
+**Files:** `session/session.go`
+
+---
+
 #### Story 3.5: Session tests
 **As a** developer, **I want** tests for JSONL session storage
 **So that** I can verify correctness
 
 **Acceptance Criteria:**
 - [ ] Test JSONL save/load roundtrip
-- [ ] Test legacy JSON migration
 - [ ] Test message integrity
 - [ ] Test token usage accumulation
+- [ ] Test list sessions
 
 **Files:** `session/session_test.go`
 
@@ -391,9 +391,7 @@ Three features implemented in **3 separate phases** (ADRs, branches, PRs).
 ### Task Dependency Graph (Phase 3)
 
 ```
-3.1 JSONL save ── 3.2 JSONL load ── 3.3 Legacy migration
-                         │
-                         └── 3.4 SyncFromStore ── 3.5 Tests
+3.1 JSONL save ── 3.2 JSONL load ── 3.3 SyncFromStore ── 3.4 List ── 3.5 Tests
 ```
 
 **Sequential within phase** — each step builds on the previous.

@@ -21,8 +21,8 @@ JSONL (JSON Lines) solves these problems by storing each record as a separate li
 |--------|----------|-----------|
 | **Format** | JSONL (JSON Lines) | Append-only writes, better diffs, streamable |
 | **Structure** | Header line + message lines | Standard JSONL pattern; metadata on first line |
-| **Migration** | Auto-detect old JSON format | Backward compatible; old sessions load fine |
-| **Save behavior** | Append new lines, rewrite header | Efficient for incremental saves |
+| **Migration** | Clean break — no migration | Old `.json` sessions won't load; users create new sessions |
+| **Save behavior** | Rewrite full file on save | Simple; JSONL enables future append optimization |
 
 ## Detailed Design
 
@@ -47,104 +47,48 @@ Each session file is a `.jsonl` file with one JSON object per line:
 
 **File path:** `.sessions/<uuid>.jsonl`
 
-### 2. Migration from Legacy JSON
+### 2. Load
 
-Auto-detect old format on load:
+Load only `.jsonl` files. No fallback to `.json`:
 
 ```go
 func Load(dataDir, id string) (*Session, error) {
     path := filepath.Join(dataDir, id+".jsonl")
     data, err := os.ReadFile(path)
     if err != nil {
-        // Try legacy .json extension
-        path = filepath.Join(dataDir, id+".json")
-        data, err = os.ReadFile(path)
-        if err != nil {
-            return nil, fmt.Errorf("session not found: %s", id)
-        }
-    }
-
-    // Detect format
-    if isLegacyJSON(data) {
-        return migrateToJSONL(data, path)
+        return nil, fmt.Errorf("session not found: %s (old JSON sessions are no longer supported)", id)
     }
     return parseJSONL(data)
 }
 
-func isLegacyJSON(data []byte) bool {
-    data = bytes.TrimSpace(data)
-    if len(data) == 0 {
-        return false
+func parseJSONL(data []byte) (*Session, error) {
+    lines := bytes.Split(bytes.TrimSpace(data), []byte("\n"))
+    if len(lines) == 0 {
+        return nil, fmt.Errorf("empty session file")
     }
-    // Legacy format starts with '{' and contains "messages" key
-    // JSONL starts with '{' but first line is metadata (has "id" key, no "messages" key)
-    if data[0] != '{' {
-        return false
-    }
-    // Try to parse as legacy
-    var legacy struct {
-        Messages json.RawMessage `json:"messages"`
-    }
-    if json.Unmarshal(data, &legacy) == nil && legacy.Messages != nil {
-        return true
-    }
-    return false
-}
-
-func migrateToJSONL(data []byte, jsonlPath string) (*Session, error) {
-    // Parse legacy JSON
-    var legacy struct {
-        ID         string       `json:"id"`
-        Model      string       `json:"model"`
-        CreatedAt  time.Time    `json:"createdAt"`
-        UpdatedAt  time.Time    `json:"updatedAt"`
-        Messages   []Message    `json:"messages"`
-        TokenUsage TokenUsage   `json:"tokenUsage"`
-    }
-    if err := json.Unmarshal(data, &legacy); err != nil {
-        return nil, fmt.Errorf("parsing legacy session: %w", err)
-    }
-
-    // Build JSONL content
-    var buf bytes.Buffer
 
     // Line 1: metadata
-    meta := map[string]interface{}{
-        "id": legacy.ID, "model": legacy.Model,
-        "createdAt": legacy.CreatedAt, "updatedAt": legacy.UpdatedAt,
-        "tokenUsage": legacy.TokenUsage,
+    var sess Session
+    if err := json.Unmarshal(lines[0], &sess); err != nil {
+        return nil, fmt.Errorf("parsing session metadata: %w", err)
     }
-    json.NewEncoder(&buf).Encode(meta)
 
     // Lines 2+: messages
-    for _, msg := range legacy.Messages {
-        json.NewEncoder(&buf).Encode(msg)
+    for i := 1; i < len(lines); i++ {
+        var msg Message
+        if err := json.Unmarshal(lines[i], &msg); err != nil {
+            continue // skip malformed messages
+        }
+        sess.Messages = append(sess.Messages, msg)
     }
 
-    // Write to .jsonl file
-    if err := os.WriteFile(jsonlPath, buf.Bytes(), 0644); err != nil {
-        return nil, fmt.Errorf("writing migrated JSONL: %w", err)
-    }
-
-    // Optionally remove old .json file
-    // os.Remove(oldPath)
-
-    return &Session{
-        ID: legacy.ID, Model: legacy.Model,
-        CreatedAt: legacy.CreatedAt, UpdatedAt: legacy.UpdatedAt,
-        Messages: legacy.Messages, TokenUsage: legacy.TokenUsage,
-    }, nil
+    return &sess, nil
 }
 ```
 
-### 3. Save Behavior
+### 3. Save
 
-**New session (first save):**
-Write all lines: metadata line + all message lines.
-
-**Existing session (incremental save):**
-- Update the metadata line (first line) with new `updatedAt` and `tokenUsage`
-- Append new message lines at the end
+Rewrite the full file on save. The JSONL format enables future append-only optimization:
 
 ```go
 func Save(dataDir string, sess *Session) error {
@@ -152,7 +96,7 @@ func Save(dataDir string, sess *Session) error {
 
     var buf bytes.Buffer
 
-    // Line 1: metadata (always rewritten)
+    // Line 1: metadata
     meta := map[string]interface{}{
         "id": sess.ID, "model": sess.Model,
         "createdAt": sess.CreatedAt, "updatedAt": time.Now(),
@@ -160,8 +104,7 @@ func Save(dataDir string, sess *Session) error {
     }
     json.NewEncoder(&buf).Encode(meta)
 
-    // Lines 2+: all messages (full rewrite for simplicity)
-    // Future optimization: track new messages and append only
+    // Lines 2+: all messages
     for _, msg := range sess.Messages {
         json.NewEncoder(&buf).Encode(msg)
     }
@@ -169,8 +112,6 @@ func Save(dataDir string, sess *Session) error {
     return os.WriteFile(path, buf.Bytes(), 0644)
 }
 ```
-
-**Note:** For MVP, we rewrite the full file on save. The JSONL format enables future optimization to append-only writes by tracking which messages have been persisted.
 
 ### 4. SyncFromStore
 
@@ -202,11 +143,11 @@ No structural changes — the same `Session` struct is used. The change is only 
 
 | File | Change |
 |------|--------|
-| `session/session.go` | Rewrite `Load()` — detect format, parse JSONL or migrate from JSON |
+| `session/session.go` | Rewrite `Load()` — read `.jsonl` only, no JSON fallback |
 | `session/session.go` | Rewrite `Save()` — write JSONL format |
-| `session/session.go` | Update `SyncFromStore()` — no change needed |
-| `session/session.go` | Add `isLegacyJSON()`, `migrateToJSONL()`, `parseJSONL()` helpers |
+| `session/session.go` | Add `parseJSONL()` helper |
 | `session/session.go` | Update file extension from `.json` to `.jsonl` |
+| `session/session.go` | Update `List()` to find `.jsonl` files |
 
 ### 7. Data Flow
 
@@ -225,29 +166,31 @@ User sends message
 
 Session loaded
   → Load() reads .jsonl file
-  → Detects format (JSONL or legacy JSON)
-  → If legacy: migrate to .jsonl, return session
-  → If JSONL: parse line by line
+  → parseJSONL() reads line by line
   → Line 1: metadata → Session struct
   → Lines 2+: messages → Session.Messages
+
+List sessions
+  → List() reads .sessions/*.jsonl files
+  → Returns sessions sorted by updatedAt
 ```
 
 ## Consequences
 
-- **Positive:** Append-only writes — no full file rewrite needed (future optimization)
-- **Positive:** Better diffs — each message is a separate line in version control
+- **Positive:** Append-only writes possible (future optimization)
+- **Positive:** Better diffs — each message is a separate line
 - **Positive:** Streamable — can process large sessions line by line
-- **Positive:** Backward compatible — auto-migrates old JSON sessions
-- **Negative:** Two formats during migration period
-- **Mitigation:** Auto-detection handles both; migration is one-way
+- **Positive:** Simple code — no migration logic, no format detection
+- **Negative:** Old `.json` sessions won't load
+- **Mitigation:** Users create new sessions; conversation history is in the message store
 - **Negative:** File extension changes from `.json` to `.jsonl`
-- **Mitigation:** Auto-detect on load; old `.json` files still work
+- **Mitigation:** Clear error message if old session is requested
 
 ## Alternatives Considered
 
 | Alternative | Rejected Because |
 |-------------|------------------|
+| Auto-migrate JSON to JSONL | Adds complexity; old sessions are low-value (MVP stage) |
 | Keep JSON format | Full rewrite on every save; poor diffs for large sessions |
 | SQLite | Overkill for single-user local storage |
 | Binary format | Not human-readable; breaks session inspection |
-| Streaming JSON (SSE) | Overly complex; JSONL is simpler |

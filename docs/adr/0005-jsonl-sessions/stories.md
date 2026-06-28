@@ -8,7 +8,7 @@ Session files use JSON arrays. Every save rewrites the entire file. Large sessio
 
 1. **Efficient** — Append-only writes (future optimization)
 2. **Clean diffs** — Each message is a separate line
-3. **Backward compatible** — Old JSON sessions auto-migrate
+3. **Simple** — No migration logic, clean break from old format
 
 ---
 
@@ -36,47 +36,20 @@ Session files use JSON arrays. Every save rewrites the entire file. Large sessio
 **So that** sessions are restored correctly
 
 **Acceptance Criteria:**
-- [ ] `Load()` reads `.jsonl` file
+- [ ] `Load()` reads `.jsonl` file only
+- [ ] No fallback to `.json` (clean break)
 - [ ] Parses line 1 as metadata
 - [ ] Parses lines 2+ as messages
 - [ ] Returns `Session` struct with all fields
+- [ ] Clear error if `.jsonl` not found
 
 **Files:** `session/session.go`
 
 ---
 
-## Epic 3: Migration
+## Epic 3: Integration
 
-### Story 3.1: Legacy JSON detection
-**As a** developer, **I want** to detect old JSON format
-**So that** migration works correctly
-
-**Acceptance Criteria:**
-- [ ] `isLegacyJSON()` checks for `"messages"` key
-- [ ] `Load()` tries `.jsonl` first, then `.json`
-- [ ] Returns clear error if neither exists
-
-**Files:** `session/session.go`
-
----
-
-### Story 3.2: JSON to JSONL migration
-**As a** user, **I want** old sessions to migrate automatically
-**So that** I don't lose history
-
-**Acceptance Criteria:**
-- [ ] `migrateToJSONL()` parses legacy JSON
-- [ ] Writes new `.jsonl` file
-- [ ] Preserves all messages and metadata
-- [ ] Old `.json` file not deleted (preserved as backup)
-
-**Files:** `session/session.go`
-
----
-
-## Epic 4: Integration
-
-### Story 4.1: SyncFromStore update
+### Story 3.1: SyncFromStore update
 **As a** developer, **I want** SyncFromStore to work with JSONL
 **So that** incremental saves work
 
@@ -89,18 +62,31 @@ Session files use JSON arrays. Every save rewrites the entire file. Large sessio
 
 ---
 
-## Epic 5: Testing
+### Story 3.2: List sessions
+**As a** user, **I want** `sprout ls` to find JSONL sessions
+**So that** I can list and resume sessions
 
-### Story 5.1: Session tests
+**Acceptance Criteria:**
+- [ ] `List()` reads `.sessions/*.jsonl` files
+- [ ] Returns sessions sorted by updatedAt desc
+- [ ] Shows ID, age, message count, model
+
+**Files:** `session/session.go`
+
+---
+
+## Epic 4: Testing
+
+### Story 4.1: Session tests
 **As a** developer, **I want** tests for JSONL storage
 **So that** I can verify correctness
 
 **Acceptance Criteria:**
 - [ ] Test JSONL save/load roundtrip
-- [ ] Test legacy JSON migration
 - [ ] Test message integrity (all fields preserved)
 - [ ] Test token usage accumulation
 - [ ] Test concurrent access (thread safety)
+- [ ] Test list sessions
 
 **Files:** `session/session_test.go`
 
@@ -110,7 +96,7 @@ Session files use JSON arrays. Every save rewrites the entire file. Large sessio
 
 - [ ] Sessions saved as `.jsonl`
 - [ ] Sessions loaded from `.jsonl`
-- [ ] Old `.json` sessions auto-migrate
+- [ ] Old `.json` sessions not supported (clean break)
 - [ ] All existing tests pass
 - [ ] New tests for JSONL roundtrip
 - [ ] `go build ./...` succeeds
